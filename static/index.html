@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <title>Document</title>
+</head>
+<body>
+  <div id="v-app">
+    <h1>{{ title }}</h1>
+    <form>
+      <input v-model="text" type="text"/>
+      <button type="submit" @click.prevent="sendMessage()">Send</button>
+    </form>
+    <p>
+      <ul>
+        <li v-for='(msg, index) of messages'>
+          <strong>{{ msg.sender }}:</strong>
+          {{ msg.message }} 
+          <button type="button" @click.prevent="likeMessage(index)">Curtir</button>
+          {{ msg.likes }}
+        </li>
+      </ul>
+    </p>
+  </div>
+  <script>
+    var app = new Vue({
+      el: '#v-app',
+      data: {
+        username: '',
+        title: 'WS App',
+        text: '', 
+        messages: [],
+        socket: { chat: null, alert: null },
+      },
+      methods: {
+        sendMessage() {
+          console.log(`send: ${this.text}`);
+          this.socket.chat.emit('messageServer', { sender: this.username, message: this.text, likes: 0 })
+          this.text = '';
+        },
+        receiveMessage(msg) {
+          console.log(`recv: ${msg}`);
+          this.messages.push(msg);
+        },
+        likeMessage(id) {
+          this.socket.chat.emit('likeMessageServer', { id: id })
+        }
+      },
+      created() {
+        this.username = prompt('Digite seu nome:')
+        this.socket.chat = io('http://localhost:3000/chat');
+        this.socket.chat.on('messageClient', (msg) => {
+          this.messages = msg
+        })
+      }
+    })
+  </script>
+</body>
+</html>
