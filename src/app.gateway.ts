@@ -1,10 +1,10 @@
-import { Logger } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Socket, Server } from 'socket.io';
 import {
   SubscribeMessage,
   WebSocketGateway,
   OnGatewayInit,
-  WsResponse,
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -30,6 +30,7 @@ export class AppGateway
     this.logger.log(`Client connected: ${client.id}`);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @SubscribeMessage('messageServer')
   handleMessage(
     client: Socket,
@@ -39,6 +40,7 @@ export class AppGateway
     this.server.emit('messageClient', this.message);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @SubscribeMessage('likeMessageServer')
   handleLike(client: Socket, payload: { id: number }) {
     this.message[payload.id].likes++;

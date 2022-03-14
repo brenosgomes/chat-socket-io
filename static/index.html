@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <title>Document</title>
 </head>
 <body>
@@ -30,7 +31,10 @@
     var app = new Vue({
       el: '#v-app',
       data: {
-        username: '',
+        user: {
+          email: '',
+          password: ''
+        },
         title: 'WS App',
         text: '', 
         messages: [],
@@ -39,7 +43,7 @@
       methods: {
         sendMessage() {
           console.log(`send: ${this.text}`);
-          this.socket.chat.emit('messageServer', { sender: this.username, message: this.text, likes: 0 })
+          this.socket.chat.emit('messageServer', { sender: localStorage.getItem('name'), message: this.text, likes: 0 })
           this.text = '';
         },
         receiveMessage(msg) {
@@ -48,11 +52,27 @@
         },
         likeMessage(id) {
           this.socket.chat.emit('likeMessageServer', { id: id })
-        }
+        },
+        login() {
+          axios
+            .post("http://localhost:3000/auth/login", this.user)
+            .then((res) => {
+              localStorage.setItem('token', res.data.token) 
+              localStorage.setItem('name', res.data.name)
+            })
+            .catch((err) => {
+              alert(err);
+            });
+        },
       },
-      created() {
-        this.username = prompt('Digite seu nome:')
-        this.socket.chat = io('http://localhost:3000/chat');
+      async created() {
+        this.user.email = prompt('Digite seu email:')
+        this.user.password = prompt('Digite sua senha:')
+        await this.login()
+        new Promise((resolve) => {
+          return resolve(this.login())
+        })
+        this.socket.chat = io('http://localhost:3000/chat', { query: { token: localStorage.getItem('token') } });
         this.socket.chat.on('messageClient', (msg) => {
           this.messages = msg
         })
